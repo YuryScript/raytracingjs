@@ -1,21 +1,4 @@
-﻿<!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="utf-8"/>
-		<title>
-			3d
-		</title>
-		<style>
-body {
-	margin: 0;
-	padding: 0;
-}
-		</style>
-	</head>
-	<body>
-		<canvas id="canvas"></canvas>
-		<script>
-class Color {
+﻿class Color {
 	constructor(r = 0, g = 0, b = 0){
 		this.r = r;
 		this.g = g;
@@ -164,7 +147,7 @@ class Renderer {
 		
 		this.scene.light = {};
 		this.scene.light.a = new LightAmbient(new Vector(0.1, 0.1, 0.1));
-		//this.scene.light.b = new LightDirectional(new Vector(0.3, 0.3, 0.3), new Vector(1, 4, 4));
+		this.scene.light.b = new LightDirectional(new Vector(0.3, 0.3, 0.3), new Vector(1, 4, 4));
 		this.scene.light.c = new LightPoint(4, 0, 2, new Vector(0, 0.9, 0));
 		this.scene.light.d = new LightPoint(-4, 0, 2, new Vector(0, 0, 0.9));
 		this.scene.light.f = new LightPoint(0, 4, 2, new Vector(0.9, 0, 0));
@@ -313,6 +296,3 @@ canvas.height = 700;
 //canvas.width = document.documentElement.clientWidth;
 //canvas.height = document.documentElement.clientHeight;
 const raytracing = new Renderer(canvas);
-		</script>
-	</body>
-</html>
