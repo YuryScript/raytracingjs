@@ -140,17 +140,17 @@ class Renderer {
 		this.scene = {};
 		
 		this.scene.sphere = {};
-		this.scene.sphere.a = new Sphere(0, 0, 5, 1, new Color(255, 255, 255));
-		//this.scene.sphere.b = new Sphere(-2, 0, 5, 1, new Color(0, 200, 0));
-		//this.scene.sphere.c = new Sphere(2, 0, 5, 1, new Color(0, 0, 200));
-		//this.scene.sphere.d = new Sphere(0, -5001, 0, 5000, new Color(255, 255, 255));
+		this.scene.sphere.a = new Sphere(0, 0, 5, 1, new Color(255, 0, 0), 10);
+		this.scene.sphere.b = new Sphere(-2, 0, 5, 1, new Color(0, 255, 0), 100);
+		this.scene.sphere.c = new Sphere(2, 0, 5, 1, new Color(0, 0, 255), 100);
+		this.scene.sphere.d = new Sphere(0, -5001, 0, 5000, new Color(255, 255, 255));
 		
 		this.scene.light = {};
 		this.scene.light.a = new LightAmbient(new Vector(0.1, 0.1, 0.1));
 		this.scene.light.b = new LightDirectional(new Vector(0.3, 0.3, 0.3), new Vector(1, 4, 4));
-		this.scene.light.c = new LightPoint(4, 0, 2, new Vector(0, 0.9, 0));
-		this.scene.light.d = new LightPoint(-4, 0, 2, new Vector(0, 0, 0.9));
-		this.scene.light.f = new LightPoint(0, 4, 2, new Vector(0.9, 0, 0));
+		this.scene.light.c = new LightPoint(0, 4, 2, new Vector(0.6, 0.6, 0.6));
+		//this.scene.light.d = new LightPoint(-4, 0, 2, new Vector(0, 0, 0.9));
+		//this.scene.light.f = new LightPoint(0, 4, 2, new Vector(0.9, 0, 0));
 		
 		this.rayCount = 0;
 		this.quality = 1;
@@ -195,9 +195,11 @@ class Renderer {
 				closestSphere = this.scene.sphere[x];
 			}
 		}
+		
 		if(!closestSphere){
 			return this.backgroundColor;
 		}
+		
 		var point = new Vector(
 			camera.x + closestT * direction.v1,
 			camera.y + closestT * direction.v2,
@@ -210,7 +212,10 @@ class Renderer {
 		);
 		normal = Vector.divide(normal, normal.length());
 		
-		return closestSphere.color.multiplyVector(this.computeLighting(point, normal));
+		var view = Vector.multiply(direction, -1);
+		var lighting = this.computeLighting(point, normal, view, closestSphere.specularity);
+		
+		return closestSphere.color.multiplyVector(lighting);
 	}
 	
 	intersectRaySphere(camera, direction, sphere) {
@@ -241,7 +246,7 @@ class Renderer {
 		};
 	}
 	
-	computeLighting(point, normal){
+	computeLighting(point, normal, view, specularity){
 		var intensity = new Vector(0, 0, 0);
 		for(let x in this.scene.light){
 			if(this.scene.light[x] instanceof LightAmbient){
@@ -266,6 +271,20 @@ class Renderer {
 						this.scene.light[x].intensity.v3 * a / (normal.length() * L.length()),
 					));
 				}
+				
+				if (specularity != -1) {
+					var R = Vector.subtract(Vector.multiply(normal, 2 * Vector.dotProduct(L, normal)), L);
+					var RDotV = Vector.dotProduct(R, view);
+					if (RDotV > 0) {
+						var tmp = Math.pow(RDotV / (R.length() * view.length()), specularity);
+						intensity = Vector.add(intensity, new Vector(
+							this.scene.light[x].intensity.v1 * tmp,
+							this.scene.light[x].intensity.v2 * tmp,
+							this.scene.light[x].intensity.v3 * tmp,
+						));
+					}
+				}
+				
 			}
 		}
 		return intensity;
