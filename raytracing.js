@@ -1,4 +1,6 @@
-﻿class Color {
+﻿'use strict';
+
+class Color {
 	constructor(r = 0, g = 0, b = 0){
 		this.r = r;
 		this.g = g;
@@ -140,20 +142,21 @@ class Renderer {
 		this.scene = {};
 		
 		this.scene.sphere = {};
-		this.scene.sphere.a = new Sphere(0, 0, 5, 1, new Color(255, 0, 0), 10);
-		this.scene.sphere.b = new Sphere(-2, 0, 5, 1, new Color(0, 255, 0), 100);
-		this.scene.sphere.c = new Sphere(2, 0, 5, 1, new Color(0, 0, 255), 100);
+		this.scene.sphere.a = new Sphere(0, 0, 5, 1, new Color(255, 255, 255), 100);
+		//this.scene.sphere.b = new Sphere(-2, 0, 5, 1, new Color(0, 255, 0), 100);
+		//this.scene.sphere.c = new Sphere(2, 0, 5, 1, new Color(0, 0, 255), 100);
 		this.scene.sphere.d = new Sphere(0, -5001, 0, 5000, new Color(255, 255, 255));
 		
 		this.scene.light = {};
 		this.scene.light.a = new LightAmbient(new Vector(0.1, 0.1, 0.1));
-		this.scene.light.b = new LightDirectional(new Vector(0.3, 0.3, 0.3), new Vector(1, 4, 4));
-		this.scene.light.c = new LightPoint(0, 4, 2, new Vector(0.6, 0.6, 0.6));
-		//this.scene.light.d = new LightPoint(-4, 0, 2, new Vector(0, 0, 0.9));
+		//this.scene.light.b = new LightDirectional(new Vector(0.3, 0.3, 0.3), new Vector(1, 4, 4));
+		this.scene.light.c = new LightPoint(2, 3, 8, new Vector(0, 0.6, 0));
+		this.scene.light.d = new LightPoint(-2, 3, 8, new Vector(0, 0, 0.6));
 		//this.scene.light.f = new LightPoint(0, 4, 2, new Vector(0.9, 0, 0));
 		
 		this.rayCount = 0;
 		this.quality = 1;
+		this.epsilon = 1e-3;
 		
 		this.canvasContext.putPixel = (x, y, color) => {
 			if (x < 0 || x >= this.canvas.width || y < 0 || y >= this.canvas.height) {
@@ -179,31 +182,19 @@ class Renderer {
 		);
 	}
 	
-	traceRay(camera, direction, tMin, tMax) { // O, D
-		var closestT = Infinity;
-		var closestSphere;
-		for(let x in this.scene.sphere){
-			var tmp = this.intersectRaySphere(camera, direction, this.scene.sphere[x]);
-			var t1 = tmp.t1;
-			var t2 = tmp.t2;
-			if(t1 > tMin && t1 < tMax && t1 < closestT){
-				closestT = t1;
-				closestSphere = this.scene.sphere[x];
-			}
-			if(t2 > tMin && t2 < tMax && t2 < closestT){
-				closestT = t2;
-				closestSphere = this.scene.sphere[x];
-			}
-		}
+	traceRay(origin, direction, tMin, tMax) {
+		var intersection = this.closestIntersection(origin, direction, tMin, tMax);
+		var closestSphere = intersection.closestSphere;
+		var closestT = intersection.closestT;
 		
 		if(!closestSphere){
 			return this.backgroundColor;
 		}
 		
 		var point = new Vector(
-			camera.x + closestT * direction.v1,
-			camera.y + closestT * direction.v2,
-			camera.z + closestT * direction.v3
+			origin.x + closestT * direction.v1,
+			origin.y + closestT * direction.v2,
+			origin.z + closestT * direction.v3
 		);
 		var normal = new Vector(
 			point.v1 - closestSphere.x,
@@ -218,13 +209,39 @@ class Renderer {
 		return closestSphere.color.multiplyVector(lighting);
 	}
 	
-	intersectRaySphere(camera, direction, sphere) {
+	closestIntersection(origin, direction, tMin, tMax) {
+		var closestT = Infinity;
+		var closestSphere = null;
+		for(let x in this.scene.sphere){
+			var tmp = this.intersectRaySphere(origin, direction, this.scene.sphere[x]);
+			if(tmp.t1 > tMin && tmp.t1 < tMax && tmp.t1 < closestT){
+				closestT = tmp.t1;
+				closestSphere = this.scene.sphere[x];
+			}
+			if(tmp.t2 > tMin && tmp.t2 < tMax && tmp.t2 < closestT){
+				closestT = tmp.t2
+				closestSphere = this.scene.sphere[x];
+			}
+		}
+		return {closestSphere: closestSphere, closestT: closestT};
+	}
+	
+	intersectRaySphere(origin, direction, sphere) {
 		var radius = sphere.radius;
-		var vector = new Vector(
-			camera.x - sphere.x,
-			camera.y - sphere.y,
-			camera.z - sphere.z,
-		);
+		if(origin instanceof Vector){
+			var vector = new Vector(
+				origin.v1 - sphere.x,
+				origin.v2 - sphere.y,
+				origin.v3 - sphere.z,
+			);
+		}
+		else {
+			var vector = new Vector(
+				origin.x - sphere.x,
+				origin.y - sphere.y,
+				origin.z - sphere.z,
+			);
+		}
 		
 		var a = Vector.dotProduct(direction, direction);
 		var b = 2 * Vector.dotProduct(vector, direction);
@@ -252,17 +269,25 @@ class Renderer {
 			if(this.scene.light[x] instanceof LightAmbient){
 				intensity = Vector.add(intensity, this.scene.light[x].intensity);
 			} else {
-				var L;
+				var L, tMax;
 				if(this.scene.light[x] instanceof LightPoint){
 					L = new Vector(
 						this.scene.light[x].x - point.v1,
 						this.scene.light[x].y - point.v2,
 						this.scene.light[x].z - point.v3,
 					);
+					tMax = 1;
 				}
 				if(this.scene.light[x] instanceof LightDirectional){
 					L = this.scene.light[x].direction;
+					tMax = Infinity;
 				}
+				// Тени
+				var blocker = this.closestIntersection(point, L, this.epsilon, tMax);
+				if (blocker.closestSphere) {
+					continue;
+				}
+				// Диффузность
 				var a = Vector.dotProduct(normal, L);
 				if(a > 0){
 					intensity = Vector.add(intensity, new Vector(
@@ -271,7 +296,7 @@ class Renderer {
 						this.scene.light[x].intensity.v3 * a / (normal.length() * L.length()),
 					));
 				}
-				
+				// Зеркальность
 				if (specularity != -1) {
 					var R = Vector.subtract(Vector.multiply(normal, 2 * Vector.dotProduct(L, normal)), L);
 					var RDotV = Vector.dotProduct(R, view);
