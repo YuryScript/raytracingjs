@@ -5,6 +5,7 @@ class Color {
 		this.r = r;
 		this.g = g;
 		this.b = b;
+		this.check();
 	}
 	
 	check(){
@@ -14,18 +15,30 @@ class Color {
 	}
 	
 	multiply(k) {
-		return new Color(
+		var result = new Color(
 			this.r * k,
 			this.g * k,
 			this.b * k
 		);
+		result.check();
+		return result;
 	}
 	
 	multiplyVector(vector) {
-		return new Color(
+		var result = new Color(
 			this.r * vector.v1,
 			this.g * vector.v2,
 			this.b * vector.v3
+		);
+		result.check();
+		return result;
+	}
+	
+	static average(color1, color2){
+		return new Color(
+			(color1.r + color2.r) / 2,
+			(color1.g + color2.g) / 2,
+			(color1.b + color2.b) / 2
 		);
 	}
 }
@@ -89,21 +102,22 @@ class Camera {
 		this.x = x;
 		this.y = y;
 		this.z = z;
-		//this.viewportWidth = document.documentElement.clientWidth / document.documentElement.clientHeight;
-		this.viewportWidth = 1;
+		this.viewportWidth = document.documentElement.clientWidth / document.documentElement.clientHeight;
+		//this.viewportWidth = 1;
 		this.viewportHeight = 1;
 		this.distanse = 1;
 	}
 }
 
 class Sphere {
-	constructor(x = 0, y = 0, z = 0, radius = 1, color = new Color(), specularity = 0){
+	constructor(x = 0, y = 0, z = 0, radius = 1, color = new Color(), specularity = 0, reflectivity = 0){
 		this.x = x;
 		this.y = y;
 		this.z = z;
 		this.radius = radius;
 		this.color = color;
 		this.specularity = specularity;
+		this.reflectivity = reflectivity;
 	}
 }
 
@@ -132,43 +146,40 @@ class LightDirectional {
 class Renderer {
 	constructor(canvas){
 		this.camera = new Camera(0, 0, 0);
-		this.canvas = canvas;
 		
+		this.canvas = canvas;
 		this.canvasContext = this.canvas.getContext('2d');
 		this.canvasBuffer = this.canvasContext.getImageData(0, 0, this.canvas.width, this.canvas.height);
 		this.canvasPitch = this.canvasBuffer.width * 4;
+		
 		this.backgroundColor = new Color(0, 0, 0);
 		
 		this.scene = {};
 		
 		this.scene.sphere = {};
-		this.scene.sphere.a = new Sphere(0, 0, 5, 1, new Color(255, 255, 255), 100);
-		//this.scene.sphere.b = new Sphere(-2, 0, 5, 1, new Color(0, 255, 0), 100);
-		//this.scene.sphere.c = new Sphere(2, 0, 5, 1, new Color(0, 0, 255), 100);
+		this.scene.sphere.a = new Sphere(0, 0, 5, 1, new Color(255, 0, 0), 100);
+		this.scene.sphere.b = new Sphere(-2, 0, 5, 1, new Color(0, 255, 0), 100);
+		this.scene.sphere.c = new Sphere(2, 0, 5, 1, new Color(0, 0, 255), 100);
 		this.scene.sphere.d = new Sphere(0, -5001, 0, 5000, new Color(255, 255, 255));
 		
 		this.scene.light = {};
 		this.scene.light.a = new LightAmbient(new Vector(0.1, 0.1, 0.1));
-		//this.scene.light.b = new LightDirectional(new Vector(0.3, 0.3, 0.3), new Vector(1, 4, 4));
-		this.scene.light.c = new LightPoint(2, 3, 8, new Vector(0, 0.6, 0));
-		this.scene.light.d = new LightPoint(-2, 3, 8, new Vector(0, 0, 0.6));
-		//this.scene.light.f = new LightPoint(0, 4, 2, new Vector(0.9, 0, 0));
+		this.scene.light.b = new LightDirectional(new Vector(0.3, 0.3, 0.3), new Vector(0, 1, 0));
+		this.scene.light.c = new LightPoint(0, 3, 8, new Vector(0.3, 0.3, 0.3));
 		
 		this.rayCount = 0;
-		this.quality = 1;
 		this.epsilon = 1e-3;
+		this.supersampling = 1;
 		
 		this.canvasContext.putPixel = (x, y, color) => {
-			if (x < 0 || x >= this.canvas.width || y < 0 || y >= this.canvas.height) {
+			if(x < 0 || y < 0 || x >= this.canvas.width || y >= this.canvas.height){
 				return;
 			}
-
 			var offset = 4 * x + this.canvasPitch * y;
 			this.canvasBuffer.data[offset++] = color.r;
 			this.canvasBuffer.data[offset++] = color.g;
 			this.canvasBuffer.data[offset++] = color.b;
 			this.canvasBuffer.data[offset] = 255; // Alpha = 255 (полная не прозрачность)
-			this.rayCount++;
 		};
 		
 		this.draw();
@@ -223,6 +234,7 @@ class Renderer {
 				closestSphere = this.scene.sphere[x];
 			}
 		}
+		this.rayCount++;
 		return {closestSphere: closestSphere, closestT: closestT};
 	}
 	
@@ -321,10 +333,24 @@ class Renderer {
 	
 	draw() {
 		console.time('bench');
-		for(let x = 0; x < this.canvas.width; x += this.quality){
-			for(let y = 0; y < this.canvas.height; y += this.quality){
-				var direction = this.canvasToViewport(x, y);
-				var color = this.traceRay(this.camera, direction, this.camera.distanse, Infinity);
+		for(let x = 0; x < this.canvas.width; x++){
+			for(let y = 0; y < this.canvas.height; y++){
+				var color;
+				// сглаживание/supersampling
+				for(let i = 0; i < this.supersampling; i++){
+					let X = x + (1 / this.supersampling) * i;
+					for(let j = 0; j < this.supersampling; j++){
+						let Y = y + (1 / this.supersampling) * j;
+						let direction = this.canvasToViewport(X, Y);
+						if(i == 0 && j == 0) {
+							color = this.traceRay(this.camera, direction, this.camera.distanse, Infinity);
+						}
+						else {
+							let colorTmp = this.traceRay(this.camera, direction, this.camera.distanse, Infinity);
+							color = Color.average(color, colorTmp);
+						}
+					}
+				}
 				this.canvasContext.putPixel(x, y, color);
 			}
 		}
@@ -335,8 +361,8 @@ class Renderer {
 }
 
 const canvas = document.getElementById('canvas');
-canvas.width = 700;
-canvas.height = 700;
-//canvas.width = document.documentElement.clientWidth;
-//canvas.height = document.documentElement.clientHeight;
+//canvas.width = 700;
+//canvas.height = 700;
+canvas.width = document.documentElement.clientWidth;
+canvas.height = document.documentElement.clientHeight;
 const raytracing = new Renderer(canvas);
