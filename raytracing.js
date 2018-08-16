@@ -26,7 +26,7 @@ class Color {
 		var result = new Color(
 			color.r * k,
 			color.g * k,
-			color.b * k
+			color.b * k,
 		);
 		result.check();
 		return result;
@@ -36,7 +36,7 @@ class Color {
 		var result = new Color(
 			color1.r + color2.r,
 			color1.g + color2.g,
-			color1.b + color2.b
+			color1.b + color2.b,
 		);
 		result.check();
 		return result;
@@ -46,7 +46,7 @@ class Color {
 		var result = new Color(
 			color.r * vector.v1,
 			color.g * vector.v2,
-			color.b * vector.v3
+			color.b * vector.v3,
 		);
 		result.check();
 		return result;
@@ -56,7 +56,7 @@ class Color {
 		return new Color(
 			(color1.r + color2.r) / 2,
 			(color1.g + color2.g) / 2,
-			(color1.b + color2.b) / 2
+			(color1.b + color2.b) / 2,
 		);
 	}
 }
@@ -184,8 +184,8 @@ class Renderer {
 		this.scene = {};
 		
 		this.scene.sphere = {};
-		this.scene.sphere.a = new Sphere(new Position(0, 0, 5), 1, new Color(255, 0, 0), 100, 1);
-		this.scene.sphere.b = new Sphere(new Position(-2, 0, 5), 1, new Color(0, 255, 0), 100, 1);
+		this.scene.sphere.a = new Sphere(new Position(0, 0, 5), 1, new Color(255, 0, 0), 100, 0);
+		this.scene.sphere.b = new Sphere(new Position(-2, 0, 5), 1, new Color(0, 255, 0), 100, 0);
 		this.scene.sphere.c = new Sphere(new Position(2, 0, 5), 1, new Color(0, 0, 255), 100, 0);
 		this.scene.sphere.d = new Sphere(new Position(0, -5001, 0), 5000, new Color(255, 255, 255), 0, 0);
 		
@@ -246,7 +246,6 @@ class Renderer {
 		var reflectedColor = this.traceRay(point, reflectedRay, this.epsilon, Infinity, recursionDepth - 1);
 
 		return Color.add(Color.multiply(localColor, 1 - closestSphere.reflectivity), Color.multiply(reflectedColor, closestSphere.reflectivity));
-		// return Color
 	}
 	
 	closestIntersection(origin, direction, tMin, tMax) {
@@ -282,7 +281,7 @@ class Renderer {
 		if(discriminant < 0){
 			return {
 				t1: Infinity,
-				t2: Infinity
+				t2: Infinity,
 			};
 		}
 
@@ -290,7 +289,7 @@ class Renderer {
 		var t2 = (-b - Math.sqrt(discriminant)) / (2 * a);
 		return {
 			t1: t1,
-			t2: t2
+			t2: t2,
 		};
 	}
 	
@@ -302,11 +301,7 @@ class Renderer {
 			} else {
 				var L, tMax;
 				if(this.scene.light[x] instanceof LightPoint){
-					L = new Vector(
-						this.scene.light[x].x - point.v1,
-						this.scene.light[x].y - point.v2,
-						this.scene.light[x].z - point.v3,
-					);
+					L = Vector.subtract(this.scene.light[x].position.toVector(), point);
 					tMax = 1;
 				}
 				if(this.scene.light[x] instanceof LightDirectional){
