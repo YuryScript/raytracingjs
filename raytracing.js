@@ -8,27 +8,45 @@ class Color {
 		this.check();
 	}
 	
+	toVector(){
+		return new Vector(
+			this.r,
+			this.g,
+			this.b,
+		);
+	}
+	
 	check(){
 		this.r = (this.r > 255) ? 255 : (this.r < 0) ? 0 : this.r;
 		this.g = (this.g > 255) ? 255 : (this.g < 0) ? 0 : this.g;
 		this.b = (this.b > 255) ? 255 : (this.b < 0) ? 0 : this.b;
 	}
 	
-	multiply(k) {
+	static multiply(color, k) {
 		var result = new Color(
-			this.r * k,
-			this.g * k,
-			this.b * k
+			color.r * k,
+			color.g * k,
+			color.b * k
 		);
 		result.check();
 		return result;
 	}
 	
-	multiplyVector(vector) {
+	static add(color1, color2) {
 		var result = new Color(
-			this.r * vector.v1,
-			this.g * vector.v2,
-			this.b * vector.v3
+			color1.r + color2.r,
+			color1.g + color2.g,
+			color1.b + color2.b
+		);
+		result.check();
+		return result;
+	}
+	
+	static multiplyVector(color, vector) {
+		var result = new Color(
+			color.r * vector.v1,
+			color.g * vector.v2,
+			color.b * vector.v3
 		);
 		result.check();
 		return result;
@@ -60,7 +78,7 @@ class Vector {
 		return new Vector(
 			vector.v1 * k,
 			vector.v2 * k,
-			vector.v3 * k
+			vector.v3 * k,
 		);
 	}
 	
@@ -69,7 +87,7 @@ class Vector {
 		return new Vector(
 			vector.v1 / k,
 			vector.v2 / k,
-			vector.v3 / k
+			vector.v3 / k,
 		);
 	}
 	
@@ -78,7 +96,7 @@ class Vector {
 		return new Vector(
 			vector1.v1 + vector2.v1,
 			vector1.v2 + vector2.v2,
-			vector1.v3 + vector2.v3
+			vector1.v3 + vector2.v3,
 		);
 	}
 
@@ -87,7 +105,7 @@ class Vector {
 		return new Vector(
 			vector1.v1 - vector2.v1,
 			vector1.v2 - vector2.v2,
-			vector1.v3 - vector2.v3
+			vector1.v3 - vector2.v3,
 		);
 	}
 	
@@ -97,23 +115,34 @@ class Vector {
 	}
 }
 
-class Camera {
+class Position {
 	constructor(x = 0, y = 0, z = 0){
 		this.x = x;
 		this.y = y;
 		this.z = z;
-		this.viewportWidth = document.documentElement.clientWidth / document.documentElement.clientHeight;
-		//this.viewportWidth = 1;
-		this.viewportHeight = 1;
-		this.distanse = 1;
+	}
+	
+	toVector(){
+		return new Vector(
+			this.x,
+			this.y,
+			this.z,
+		);
+	}
+}
+
+class Camera {
+	constructor(position = new Position(), viewportWidth = 1, viewportHeight = 1, distanse = 1){
+		this.position = position;
+		this.viewportWidth = viewportWidth;
+		this.viewportHeight = viewportHeight;
+		this.distanse = distanse;
 	}
 }
 
 class Sphere {
-	constructor(x = 0, y = 0, z = 0, radius = 1, color = new Color(), specularity = 0, reflectivity = 0){
-		this.x = x;
-		this.y = y;
-		this.z = z;
+	constructor(position = new Position(), radius = 1, color = new Color(), specularity = 0, reflectivity = 0){
+		this.position = position;
 		this.radius = radius;
 		this.color = color;
 		this.specularity = specularity;
@@ -128,10 +157,8 @@ class LightAmbient {
 }
 
 class LightPoint {
-	constructor(x = 0, y = 0, z = 0, intensity = new Vector(1, 1, 1)){
-		this.x = x;
-		this.y = y;
-		this.z = z;
+	constructor(position = new Position(), intensity = new Vector(1, 1, 1)){
+		this.position = position;
 		this.intensity = intensity;
 	}
 }
@@ -145,7 +172,7 @@ class LightDirectional {
 
 class Renderer {
 	constructor(canvas){
-		this.camera = new Camera(0, 0, 0);
+		this.camera = new Camera(new Position(0, 0, 0), document.documentElement.clientWidth / document.documentElement.clientHeight, 1);
 		
 		this.canvas = canvas;
 		this.canvasContext = this.canvas.getContext('2d');
@@ -157,19 +184,20 @@ class Renderer {
 		this.scene = {};
 		
 		this.scene.sphere = {};
-		this.scene.sphere.a = new Sphere(0, 0, 5, 1, new Color(255, 0, 0), 100);
-		this.scene.sphere.b = new Sphere(-2, 0, 5, 1, new Color(0, 255, 0), 100);
-		this.scene.sphere.c = new Sphere(2, 0, 5, 1, new Color(0, 0, 255), 100);
-		this.scene.sphere.d = new Sphere(0, -5001, 0, 5000, new Color(255, 255, 255));
+		this.scene.sphere.a = new Sphere(new Position(0, 0, 5), 1, new Color(255, 0, 0), 100, 1);
+		this.scene.sphere.b = new Sphere(new Position(-2, 0, 5), 1, new Color(0, 255, 0), 100, 1);
+		this.scene.sphere.c = new Sphere(new Position(2, 0, 5), 1, new Color(0, 0, 255), 100, 0);
+		this.scene.sphere.d = new Sphere(new Position(0, -5001, 0), 5000, new Color(255, 255, 255), 0, 0);
 		
 		this.scene.light = {};
 		this.scene.light.a = new LightAmbient(new Vector(0.1, 0.1, 0.1));
-		this.scene.light.b = new LightDirectional(new Vector(0.3, 0.3, 0.3), new Vector(0, 1, 0));
-		this.scene.light.c = new LightPoint(0, 3, 8, new Vector(0.3, 0.3, 0.3));
+		this.scene.light.b = new LightDirectional(new Vector(1, 1, 1), new Vector(0, 1, -2));
+		//this.scene.light.c = new LightPoint(new Position(0, 3, 8), new Vector(0.6, 0.6, 0.6));
 		
 		this.rayCount = 0;
 		this.epsilon = 1e-3;
 		this.supersampling = 1;
+		this.recursionDepth = 3;
 		
 		this.canvasContext.putPixel = (x, y, color) => {
 			if(x < 0 || y < 0 || x >= this.canvas.width || y >= this.canvas.height){
@@ -193,7 +221,7 @@ class Renderer {
 		);
 	}
 	
-	traceRay(origin, direction, tMin, tMax) {
+	traceRay(origin, direction, tMin, tMax, recursionDepth) {
 		var intersection = this.closestIntersection(origin, direction, tMin, tMax);
 		var closestSphere = intersection.closestSphere;
 		var closestT = intersection.closestT;
@@ -202,22 +230,23 @@ class Renderer {
 			return this.backgroundColor;
 		}
 		
-		var point = new Vector(
-			origin.x + closestT * direction.v1,
-			origin.y + closestT * direction.v2,
-			origin.z + closestT * direction.v3
-		);
-		var normal = new Vector(
-			point.v1 - closestSphere.x,
-			point.v2 - closestSphere.y,
-			point.v3 - closestSphere.z
-		);
+		var point = Vector.add(origin, Vector.multiply(direction, closestT));
+		var normal = Vector.subtract(point, closestSphere.position.toVector());
 		normal = Vector.divide(normal, normal.length());
 		
 		var view = Vector.multiply(direction, -1);
 		var lighting = this.computeLighting(point, normal, view, closestSphere.specularity);
+		var localColor = Color.multiplyVector(closestSphere.color, lighting);
 		
-		return closestSphere.color.multiplyVector(lighting);
+		if(closestSphere.reflectivity <= 0 || recursionDepth <= 0){
+			return localColor;
+		}
+		
+		var reflectedRay = this.reflectRay(view, normal);
+		var reflectedColor = this.traceRay(point, reflectedRay, this.epsilon, Infinity, recursionDepth - 1);
+
+		return Color.add(Color.multiply(localColor, 1 - closestSphere.reflectivity), Color.multiply(reflectedColor, closestSphere.reflectivity));
+		// return Color
 	}
 	
 	closestIntersection(origin, direction, tMin, tMax) {
@@ -235,25 +264,15 @@ class Renderer {
 			}
 		}
 		this.rayCount++;
-		return {closestSphere: closestSphere, closestT: closestT};
+		return {
+			closestSphere: closestSphere,
+			closestT: closestT,
+		};
 	}
 	
 	intersectRaySphere(origin, direction, sphere) {
 		var radius = sphere.radius;
-		if(origin instanceof Vector){
-			var vector = new Vector(
-				origin.v1 - sphere.x,
-				origin.v2 - sphere.y,
-				origin.v3 - sphere.z,
-			);
-		}
-		else {
-			var vector = new Vector(
-				origin.x - sphere.x,
-				origin.y - sphere.y,
-				origin.z - sphere.z,
-			);
-		}
+		var vector = Vector.subtract(origin, sphere.position.toVector());
 		
 		var a = Vector.dotProduct(direction, direction);
 		var b = 2 * Vector.dotProduct(vector, direction);
@@ -294,12 +313,12 @@ class Renderer {
 					L = this.scene.light[x].direction;
 					tMax = Infinity;
 				}
-				// Тени
+				// тени/shadows
 				var blocker = this.closestIntersection(point, L, this.epsilon, tMax);
 				if (blocker.closestSphere) {
 					continue;
 				}
-				// Диффузность
+				// диффузность/diffuse reflection
 				var a = Vector.dotProduct(normal, L);
 				if(a > 0){
 					intensity = Vector.add(intensity, new Vector(
@@ -308,9 +327,9 @@ class Renderer {
 						this.scene.light[x].intensity.v3 * a / (normal.length() * L.length()),
 					));
 				}
-				// Зеркальность
+				// зеркальность/specular reflection
 				if (specularity != -1) {
-					var R = Vector.subtract(Vector.multiply(normal, 2 * Vector.dotProduct(L, normal)), L);
+					var R = this.reflectRay(L, normal);
 					var RDotV = Vector.dotProduct(R, view);
 					if (RDotV > 0) {
 						var tmp = Math.pow(RDotV / (R.length() * view.length()), specularity);
@@ -325,6 +344,12 @@ class Renderer {
 			}
 		}
 		return intensity;
+		// return Vector
+	}
+	
+	reflectRay(vector1, vector2){
+		return Vector.subtract(Vector.multiply(vector2, 2 * Vector.dotProduct(vector1, vector2)), vector1);
+		// return Vector
 	}
 	
 	updateCanvas(){
@@ -337,26 +362,31 @@ class Renderer {
 			for(let y = 0; y < this.canvas.height; y++){
 				var color;
 				// сглаживание/supersampling
-				for(let i = 0; i < this.supersampling; i++){
-					let X = x + (1 / this.supersampling) * i;
-					for(let j = 0; j < this.supersampling; j++){
-						let Y = y + (1 / this.supersampling) * j;
-						let direction = this.canvasToViewport(X, Y);
-						if(i == 0 && j == 0) {
-							color = this.traceRay(this.camera, direction, this.camera.distanse, Infinity);
-						}
-						else {
-							let colorTmp = this.traceRay(this.camera, direction, this.camera.distanse, Infinity);
-							color = Color.average(color, colorTmp);
+				if(this.supersampling > 1){
+					for(let i = 0; i < this.supersampling; i++){
+						let X = x + (1 / this.supersampling) * i;
+						for(let j = 0; j < this.supersampling; j++){
+							let Y = y + (1 / this.supersampling) * j;
+							let direction = this.canvasToViewport(X, Y);
+							if(i == 0 && j == 0) {
+								color = this.traceRay(this.camera.position.toVector(), direction, this.camera.distanse, Infinity, this.recursionDepth);
+							}
+							else {
+								let colorTmp = this.traceRay(this.camera.position.toVector(), direction, this.camera.distanse, Infinity, this.recursionDepth);
+								color = Color.average(color, colorTmp);
+							}
 						}
 					}
+				}
+				else {
+					color = this.traceRay(this.camera.position.toVector(), this.canvasToViewport(x, y), this.camera.distanse, Infinity, this.recursionDepth);
 				}
 				this.canvasContext.putPixel(x, y, color);
 			}
 		}
 		this.updateCanvas();
 		console.timeEnd('bench');
-		console.log(this.rayCount, 'rays');
+		console.log(this.rayCount.toLocaleString(), 'rays');
 	}
 }
 
