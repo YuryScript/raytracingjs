@@ -153,6 +153,11 @@ class Camera {
 		this.viewportWidth = viewportWidth;
 		this.viewportHeight = viewportHeight;
 		this.distanse = distanse;
+		this.rotation = [
+			[1, 0, 0],
+			[0, 1, 0],
+			[0, 0, 1]
+		];
 	}
 }
 
@@ -235,6 +240,17 @@ class Renderer {
 			-(canvasY - this.canvas.height / 2) * this.camera.viewportHeight / this.canvas.height,
 			this.camera.distanse,
 		);
+	}
+	
+	multiplyMV(matrix, vector) {
+		var vector = [vector.v1, vector.v2, vector.v3];
+		var result = [0,0,0];
+		for(let i = 0; i < 3; i++){
+			for(let j = 0; j < 3; j++){
+				result[i] += vector[j] * matrix[i][j];
+			}
+		}
+		return new Vector(result[0], result[1], result[2]);
 	}
 	
 	traceRay(origin, direction, tMin, tMax, recursionDepth) {
@@ -370,6 +386,7 @@ class Renderer {
 						for(let j = 0; j < this.supersampling; j++){
 							let Y = y + (1 / this.supersampling) * j;
 							let direction = this.canvasToViewport(X, Y);
+							direction = this.multiplyMV(this.camera.rotation, direction);
 							if(i == 0 && j == 0) {
 								color = this.traceRay(this.camera.position.toVector(), direction, this.camera.distanse, Infinity, this.recursionDepth);
 							}
@@ -381,7 +398,9 @@ class Renderer {
 					}
 				}
 				else {
-					color = this.traceRay(this.camera.position.toVector(), this.canvasToViewport(x, y), this.camera.distanse, Infinity, this.recursionDepth);
+					let direction = this.canvasToViewport(x, y);
+					direction = this.multiplyMV(this.camera.rotation, direction);
+					color = this.traceRay(this.camera.position.toVector(), direction, this.camera.distanse, Infinity, this.recursionDepth);
 				}
 				this.canvasContext.putPixel(x, y, color);
 			}
