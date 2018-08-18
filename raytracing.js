@@ -155,7 +155,7 @@ class Camera {
 		this.distanse = distanse;
 		this.rotation = [
 			[1, 0, 0],
-			[0, 1, 0],
+			[0, 1, -0.5],
 			[0, 0, 1]
 		];
 	}
@@ -193,7 +193,7 @@ class LightDirectional {
 
 class Renderer {
 	constructor(canvas, scene = {}){
-		this.camera = new Camera(new Position(0, 0, 0), document.documentElement.clientWidth / document.documentElement.clientHeight, 1);
+		this.camera = new Camera(new Position(0, 4, -6), document.documentElement.clientWidth / document.documentElement.clientHeight, 1);
 		
 		this.canvas = canvas;
 		this.canvasContext = this.canvas.getContext('2d');
@@ -205,14 +205,18 @@ class Renderer {
 		this.scene = scene;
 		
 		this.scene.sphere = {};
-		this.scene.sphere.a = new Sphere(new Position(0, 0, 5), 1, new Color(255, 0, 0), 1, 0.4);
-		this.scene.sphere.b = new Sphere(new Position(-2, 0, 5), 1, new Color(0, 255, 0), 10, 0.4);
-		this.scene.sphere.c = new Sphere(new Position(2, 0, 5), 1, new Color(0, 0, 255), 500, 0.3);
-		this.scene.sphere.d = new Sphere(new Position(0, -5001, 0), 5000, new Color(255, 255, 255), 1000, 0.5);
+		this.scene.sphere.a = new Sphere(new Position(0, 0, 5), 1, new Color(255, 0, 0), 1000, 0.5);
+		this.scene.sphere.b = new Sphere(new Position(-2, 0, 4), 1, new Color(0, 255, 0), 1000, 0.4);
+		this.scene.sphere.c = new Sphere(new Position(3, 0, 4), 1, new Color(0, 0, 255), 1000, 0);
+		this.scene.sphere.f = new Sphere(new Position(0, 0, 2), 1, new Color(255, 255, 255), 1000, 1);
+		this.scene.sphere.g = new Sphere(new Position(-1.7, 0-0.5, 1.8), 0.5, new Color(226, 66, 244), 1000, 0);
+		this.scene.sphere.h = new Sphere(new Position(0, 0-0.4, 0), 0.6, new Color(255, 191, 0), 1000, 0.6);
+		this.scene.sphere.j = new Sphere(new Position(2.3, 0-0.6, 2), 0.6, new Color(27, 173, 98), 1000, 0.4);
+		this.scene.sphere.d = new Sphere(new Position(0, -5001, 0), 5000, new Color(255, 255, 255), 1000, 0);
 		
 		this.scene.light = {};
 		this.scene.light.a = new LightAmbient(new Vector(0.1, 0.1, 0.1));
-		this.scene.light.b = new LightDirectional(new Vector(0.9, 0.9, 0.9), new Vector(0, 1, -2));
+		this.scene.light.b = new LightDirectional(new Vector(1, 1, 1), new Vector(2, 3, -2));
 		//this.scene.light.c = new LightPoint(new Position(0, 3, 2), new Vector(0.6, 0.6, 0.6));
 		
 		this.rayCount = 0;
