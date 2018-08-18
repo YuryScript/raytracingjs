@@ -68,6 +68,22 @@ class Vector {
 		this.v3 = v3;
 	}
 	
+	toColor() {
+		return new Color(
+			this.v1,
+			this.v2,
+			this.v3,
+		);
+	}
+	
+	toPosition() {
+		return new Position(
+			this.v1,
+			this.v2,
+			this.v3,
+		);
+	}
+	
 	static dotProduct(vector1, vector2){
 		// скалярное произведение
 		return vector1.v1 * vector2.v1 + vector1.v2 * vector2.v2 + vector1.v3 * vector2.v3;	
@@ -171,7 +187,7 @@ class LightDirectional {
 }
 
 class Renderer {
-	constructor(canvas){
+	constructor(canvas, scene = {}){
 		this.camera = new Camera(new Position(0, 0, 0), document.documentElement.clientWidth / document.documentElement.clientHeight, 1);
 		
 		this.canvas = canvas;
@@ -181,18 +197,18 @@ class Renderer {
 		
 		this.backgroundColor = new Color(0, 0, 0);
 		
-		this.scene = {};
+		this.scene = scene;
 		
 		this.scene.sphere = {};
-		this.scene.sphere.a = new Sphere(new Position(0, 0, 5), 1, new Color(255, 0, 0), 100, 0);
-		this.scene.sphere.b = new Sphere(new Position(-2, 0, 5), 1, new Color(0, 255, 0), 100, 0);
-		this.scene.sphere.c = new Sphere(new Position(2, 0, 5), 1, new Color(0, 0, 255), 100, 0);
-		this.scene.sphere.d = new Sphere(new Position(0, -5001, 0), 5000, new Color(255, 255, 255), 0, 0);
+		this.scene.sphere.a = new Sphere(new Position(0, 0, 5), 1, new Color(255, 0, 0), 1, 0.4);
+		this.scene.sphere.b = new Sphere(new Position(-2, 0, 5), 1, new Color(0, 255, 0), 10, 0.4);
+		this.scene.sphere.c = new Sphere(new Position(2, 0, 5), 1, new Color(0, 0, 255), 500, 0.3);
+		this.scene.sphere.d = new Sphere(new Position(0, -5001, 0), 5000, new Color(255, 255, 255), 1000, 0.5);
 		
 		this.scene.light = {};
 		this.scene.light.a = new LightAmbient(new Vector(0.1, 0.1, 0.1));
-		this.scene.light.b = new LightDirectional(new Vector(1, 1, 1), new Vector(0, 1, -2));
-		//this.scene.light.c = new LightPoint(new Position(0, 3, 8), new Vector(0.6, 0.6, 0.6));
+		this.scene.light.b = new LightDirectional(new Vector(0.9, 0.9, 0.9), new Vector(0, 1, -2));
+		//this.scene.light.c = new LightPoint(new Position(0, 3, 2), new Vector(0.6, 0.6, 0.6));
 		
 		this.rayCount = 0;
 		this.epsilon = 1e-3;
@@ -222,6 +238,7 @@ class Renderer {
 	}
 	
 	traceRay(origin, direction, tMin, tMax, recursionDepth) {
+		this.rayCount++;
 		var intersection = this.closestIntersection(origin, direction, tMin, tMax);
 		var closestSphere = intersection.closestSphere;
 		var closestT = intersection.closestT;
@@ -244,8 +261,9 @@ class Renderer {
 		
 		var reflectedRay = this.reflectRay(view, normal);
 		var reflectedColor = this.traceRay(point, reflectedRay, this.epsilon, Infinity, recursionDepth - 1);
-
-		return Color.add(Color.multiply(localColor, 1 - closestSphere.reflectivity), Color.multiply(reflectedColor, closestSphere.reflectivity));
+		
+		return Color.add(Color.multiply(localColor, 1 - closestSphere.reflectivity),
+			Color.multiply(reflectedColor, closestSphere.reflectivity));
 	}
 	
 	closestIntersection(origin, direction, tMin, tMax) {
@@ -258,11 +276,10 @@ class Renderer {
 				closestSphere = this.scene.sphere[x];
 			}
 			if(tmp.t2 > tMin && tmp.t2 < tMax && tmp.t2 < closestT){
-				closestT = tmp.t2
+				closestT = tmp.t2;
 				closestSphere = this.scene.sphere[x];
 			}
 		}
-		this.rayCount++;
 		return {
 			closestSphere: closestSphere,
 			closestT: closestT,
@@ -299,52 +316,42 @@ class Renderer {
 			if(this.scene.light[x] instanceof LightAmbient){
 				intensity = Vector.add(intensity, this.scene.light[x].intensity);
 			} else {
-				var L, tMax;
+				let L, tMax;
 				if(this.scene.light[x] instanceof LightPoint){
 					L = Vector.subtract(this.scene.light[x].position.toVector(), point);
 					tMax = 1;
 				}
-				if(this.scene.light[x] instanceof LightDirectional){
+				else { // LightDirectional
 					L = this.scene.light[x].direction;
 					tMax = Infinity;
 				}
 				// тени/shadows
-				var blocker = this.closestIntersection(point, L, this.epsilon, tMax);
+				let blocker = this.closestIntersection(point, L, this.epsilon, tMax);
 				if (blocker.closestSphere) {
 					continue;
 				}
 				// диффузность/diffuse reflection
-				var a = Vector.dotProduct(normal, L);
-				if(a > 0){
-					intensity = Vector.add(intensity, new Vector(
-						this.scene.light[x].intensity.v1 * a / (normal.length() * L.length()),
-						this.scene.light[x].intensity.v2 * a / (normal.length() * L.length()),
-						this.scene.light[x].intensity.v3 * a / (normal.length() * L.length()),
-					));
+				let NormalDotL = Vector.dotProduct(normal, L);
+				if(NormalDotL > 0){
+					intensity = Vector.add(intensity, Vector.multiply(this.scene.light[x].intensity, NormalDotL / (normal.length() * L.length()) ) );
 				}
 				// зеркальность/specular reflection
 				if (specularity != -1) {
-					var R = this.reflectRay(L, normal);
-					var RDotV = Vector.dotProduct(R, view);
+					let R = this.reflectRay(L, normal);
+					let RDotV = Vector.dotProduct(R, view);
 					if (RDotV > 0) {
-						var tmp = Math.pow(RDotV / (R.length() * view.length()), specularity);
-						intensity = Vector.add(intensity, new Vector(
-							this.scene.light[x].intensity.v1 * tmp,
-							this.scene.light[x].intensity.v2 * tmp,
-							this.scene.light[x].intensity.v3 * tmp,
-						));
+						let tmp = Math.pow(RDotV / (R.length() * view.length()), specularity);
+						intensity = Vector.add(intensity, Vector.multiply(this.scene.light[x].intensity, tmp));
 					}
 				}
 				
 			}
 		}
 		return intensity;
-		// return Vector
 	}
 	
 	reflectRay(vector1, vector2){
 		return Vector.subtract(Vector.multiply(vector2, 2 * Vector.dotProduct(vector1, vector2)), vector1);
-		// return Vector
 	}
 	
 	updateCanvas(){
@@ -385,9 +392,11 @@ class Renderer {
 	}
 }
 
-const canvas = document.getElementById('canvas');
-//canvas.width = 700;
-//canvas.height = 700;
-canvas.width = document.documentElement.clientWidth;
-canvas.height = document.documentElement.clientHeight;
-const raytracing = new Renderer(canvas);
+window.onload = () => {
+	const canvas = document.getElementById('canvas');
+	//canvas.width = 10;
+	//canvas.height = 10;
+	canvas.width = document.documentElement.clientWidth;
+	canvas.height = document.documentElement.clientHeight;
+	const raytracing = new Renderer(canvas);
+}
