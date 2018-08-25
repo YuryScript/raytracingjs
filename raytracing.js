@@ -125,6 +125,14 @@ class Vector {
 		);
 	}
 	
+	static cross(vector1, vector2){
+		return new Vector(
+			vector1.v2 * vector2.v3 - vector1.v3 * vector2.v2,
+			vector1.v3 * vector2.v1 - vector1.v1 * vector2.v3,
+			vector1.v1 * vector2.v2 - vector1.v2 * vector2.v1,
+		);
+	}
+		
 	length(){
 		// длина вектора
 		return Math.sqrt(Vector.dotProduct(this, this));
@@ -171,6 +179,15 @@ class Sphere {
 	}
 }
 
+class Polygon {
+	constructor(position = [new Position(), new Position(), new Position()], color = new Color(), specularity = 0, reflectivity = 0){
+		this.position = position;
+		this.color = color;
+		this.specularity = specularity;
+		this.reflectivity = reflectivity;
+	}
+}
+
 class LightAmbient {
 	constructor(intensity = new Vector(1, 1, 1)){
 		this.intensity = intensity;
@@ -200,23 +217,46 @@ class Renderer {
 		this.canvasBuffer = this.canvasContext.getImageData(0, 0, this.canvas.width, this.canvas.height);
 		this.canvasPitch = this.canvasBuffer.width * 4;
 		
-		this.backgroundColor = new Color(0, 0, 0);
+		this.backgroundColor = new Color(92, 195, 206);
 		
 		this.scene = scene;
 		
 		this.scene.sphere = {};
 		this.scene.sphere.a = new Sphere(new Position(0, 0, 5), 1, new Color(255, 0, 0), 1000, 0.5);
-		this.scene.sphere.b = new Sphere(new Position(-2, 0, 4), 1, new Color(0, 255, 0), 1000, 0.4);
-		this.scene.sphere.c = new Sphere(new Position(3, 0, 4), 1, new Color(0, 0, 255), 1000, 0);
-		this.scene.sphere.f = new Sphere(new Position(0, 0, 2), 1, new Color(255, 255, 255), 1000, 1);
+		this.scene.sphere.b = new Sphere(new Position(-2, 0, 5), 1, new Color(0, 255, 0), 1000, 0.4);
+		this.scene.sphere.c = new Sphere(new Position(2, 0, 5), 1, new Color(0, 0, 255), 1000, 0);
+		/*this.scene.sphere.f = new Sphere(new Position(0, 0, 2), 1, new Color(255, 255, 255), 1000, 1);
 		this.scene.sphere.g = new Sphere(new Position(-1.7, 0-0.5, 1.8), 0.5, new Color(226, 66, 244), 1000, 0);
 		this.scene.sphere.h = new Sphere(new Position(0, 0-0.4, 0), 0.6, new Color(255, 191, 0), 1000, 0.6);
-		this.scene.sphere.j = new Sphere(new Position(2.3, 0-0.6, 2), 0.6, new Color(27, 173, 98), 1000, 0.4);
-		this.scene.sphere.d = new Sphere(new Position(0, -5001, 0), 5000, new Color(255, 255, 255), 1000, 0);
+		this.scene.sphere.j = new Sphere(new Position(2.3, 0-0.6, 2), 0.6, new Color(27, 173, 98), 1000, 0.4);*/
+		//this.scene.sphere.d = new Sphere(new Position(0, -5001, 0), 5000, new Color(255, 255, 255), 1000, 0);
+		
+		this.scene.polygon = {};
+		//floor
+		this.scene.polygon.a = new Polygon([new Position(-10000, -1, 10000), new Position(10000, -1, 10000), new Position(10000, -1, -10000)], new Color(255, 255, 255), 0, 0.5);
+		this.scene.polygon.b = new Polygon([new Position(-10000, -1, 10000), new Position(-10000, -1, -10000), new Position(10000, -1, -10000)], new Color(255, 255, 255), 0, 0.5);
+		//back
+		this.scene.polygon.c = new Polygon([new Position(-1, 0, 3), new Position(0, 0, 3), new Position(0, -1, 3)], new Color(204, 16, 204), 0, 0);
+		this.scene.polygon.d = new Polygon([new Position(-1, 0, 3), new Position(-1, -1, 3), new Position(0, -1, 3)], new Color(204, 16, 204), 0, 0);
+		//left
+		this.scene.polygon.f = new Polygon([new Position(0, -1, 3), new Position(0, 0, 3), new Position(0, 0, 2)], new Color(204, 16, 204), 0, 0);
+		this.scene.polygon.g = new Polygon([new Position(0, -1, 3), new Position(0, -1, 2), new Position(0, 0, 2)], new Color(204, 16, 204), 0, 0);
+		//right
+		this.scene.polygon.h = new Polygon([new Position(-1, -1, 3), new Position(-1, 0, 3), new Position(-1, 0, 2)], new Color(204, 16, 204), 0, 0);
+		this.scene.polygon.j = new Polygon([new Position(-1, -1, 3), new Position(-1, -1, 2), new Position(-1, 0, 2)], new Color(204, 16, 204), 0, 0);
+		//top
+		this.scene.polygon.u = new Polygon([new Position(-1, 0, 3), new Position(0, 0, 3), new Position(0, 0, 2)], new Color(204, 16, 204), 0, 0);
+		this.scene.polygon.i = new Polygon([new Position(-1, 0, 3), new Position(-1, 0, 2), new Position(0, 0, 2)], new Color(204, 16, 204), 0, 0);
+		//front
+		this.scene.polygon.k = new Polygon([new Position(-1, 0, 2), new Position(0, 0, 2), new Position(0, -1, 2)], new Color(204, 16, 204), 0, 0);
+		this.scene.polygon.l = new Polygon([new Position(-1, 0, 2), new Position(-1, -1, 2), new Position(0, -1, 2)], new Color(204, 16, 204), 0, 0);
+		//bottom
+		this.scene.polygon.n = new Polygon([new Position(-1, -1, 3), new Position(0, -1, 3), new Position(0, -1, 2)], new Color(204, 16, 204), 0, 0);
+		this.scene.polygon.m = new Polygon([new Position(-1, -1, 3), new Position(-1, -1, 2), new Position(0, -1, 2)], new Color(204, 16, 204), 0, 0);
 		
 		this.scene.light = {};
 		this.scene.light.a = new LightAmbient(new Vector(0.1, 0.1, 0.1));
-		this.scene.light.b = new LightDirectional(new Vector(1, 1, 1), new Vector(2, 3, -2));
+		this.scene.light.b = new LightDirectional(new Vector(1, 1, 1), new Vector(1, 3, 1));
 		//this.scene.light.c = new LightPoint(new Position(0, 3, 2), new Vector(0.6, 0.6, 0.6));
 		
 		this.rayCount = 0;
@@ -260,57 +300,105 @@ class Renderer {
 	traceRay(origin, direction, tMin, tMax, recursionDepth) {
 		this.rayCount++;
 		var intersection = this.closestIntersection(origin, direction, tMin, tMax);
-		var closestSphere = intersection.closestSphere;
-		var closestT = intersection.closestT;
-		
-		if(!closestSphere){
+		if(!intersection.closest){
 			return this.backgroundColor;
 		}
-		
-		var point = Vector.add(origin, Vector.multiply(direction, closestT));
-		var normal = Vector.subtract(point, closestSphere.position.toVector());
-		normal = Vector.divide(normal, normal.length());
+		var closest = intersection.closest;
+		var closestT = intersection.closestT;
+		var point = intersection.point;
+		var normal = intersection.normal;
 		
 		var view = Vector.multiply(direction, -1);
-		var lighting = this.computeLighting(point, normal, view, closestSphere.specularity);
-		var localColor = Color.multiplyVector(closestSphere.color, lighting);
+		var lighting = this.computeLighting(point, normal, view, closest.specularity);
+		var localColor = Color.multiplyVector(closest.color, lighting);
 		
-		if(closestSphere.reflectivity <= 0 || recursionDepth <= 0){
+		if(closest.reflectivity <= 0 || recursionDepth <= 0){
 			return localColor;
 		}
 		
 		var reflectedRay = this.reflectRay(view, normal);
 		var reflectedColor = this.traceRay(point, reflectedRay, this.epsilon, Infinity, recursionDepth - 1);
 		
-		return Color.add(Color.multiply(localColor, 1 - closestSphere.reflectivity),
-			Color.multiply(reflectedColor, closestSphere.reflectivity));
+		return Color.add(Color.multiply(localColor, 1 - closest.reflectivity),
+			Color.multiply(reflectedColor, closest.reflectivity));
 	}
 	
 	closestIntersection(origin, direction, tMin, tMax) {
 		var closestT = Infinity;
-		var closestSphere = null;
+		var closest = null;
+		var a = Vector.dotProduct(direction, direction);
 		for(let x in this.scene.sphere){
-			var tmp = this.intersectRaySphere(origin, direction, this.scene.sphere[x]);
+			let tmp = this.intersectRaySphere(origin, direction, this.scene.sphere[x], a);
 			if(tmp.t1 > tMin && tmp.t1 < tMax && tmp.t1 < closestT){
 				closestT = tmp.t1;
-				closestSphere = this.scene.sphere[x];
+				closest = this.scene.sphere[x];
 			}
 			if(tmp.t2 > tMin && tmp.t2 < tMax && tmp.t2 < closestT){
 				closestT = tmp.t2;
-				closestSphere = this.scene.sphere[x];
+				closest = this.scene.sphere[x];
 			}
 		}
+		for(let x in this.scene.polygon){
+			let tmp = this.intersectRayPolygon(origin, direction, this.scene.polygon[x]);
+			if(tmp > tMin && tmp < tMax && tmp < closestT){
+				closestT = tmp;
+				closest = this.scene.polygon[x];
+			}
+		}
+		var point, normal;
+		if(closest instanceof Sphere){
+			point = Vector.add(origin, Vector.multiply(direction, closestT));
+			normal = Vector.subtract(point, closest.position.toVector());
+			normal = Vector.divide(normal, normal.length());
+		} 
+		if(closest instanceof Polygon){
+			point = Vector.add(origin, Vector.multiply(direction, closestT));
+			normal = Vector.cross(Vector.subtract(closest.position[1].toVector(), closest.position[0].toVector()), Vector.subtract(closest.position[2].toVector(), closest.position[0].toVector()));
+			normal = Vector.divide(normal, normal.length());
+		}
 		return {
-			closestSphere: closestSphere,
+			closest: closest,
 			closestT: closestT,
+			point: point,
+			normal: normal,
 		};
 	}
 	
-	intersectRaySphere(origin, direction, sphere) {
+	intersectRayPolygon(origin, direction, polygon){
+		var edge1 = Vector.subtract(polygon.position[1].toVector(), polygon.position[0].toVector());
+		var edge2 = Vector.subtract(polygon.position[2].toVector(), polygon.position[0].toVector());
+		
+		var pVector = Vector.cross(direction, edge2);
+		var det = Vector.dotProduct(edge1, pVector);
+		
+		if(det > -this.epsilon && det < this.epsilon){
+			return Infinity;
+		}
+		var invDet = 1 / det;
+		
+		var tVector = Vector.subtract(origin, polygon.position[0].toVector());
+		
+		var u = Vector.dotProduct(tVector, pVector) * invDet;
+		if(u < 0 || u > 1){
+			return Infinity;
+		}
+		
+		var qVector = Vector.cross(tVector, edge1);
+		
+		var v = Vector.dotProduct(direction, qVector) * invDet;
+		if(v < 0 || u + v > 1){
+			return Infinity;
+		}
+		
+		var t = Vector.dotProduct(edge2, qVector) * invDet;
+		return t;
+	}
+	
+	intersectRaySphere(origin, direction, sphere, a) {
 		var radius = sphere.radius;
 		var vector = Vector.subtract(origin, sphere.position.toVector());
 		
-		var a = Vector.dotProduct(direction, direction);
+		var a = a;
 		var b = 2 * Vector.dotProduct(vector, direction);
 		var c = Vector.dotProduct(vector, vector) - radius * radius;
 		
@@ -347,7 +435,7 @@ class Renderer {
 				}
 				// тени/shadows
 				let blocker = this.closestIntersection(point, L, this.epsilon, tMax);
-				if (blocker.closestSphere) {
+				if (blocker.closest) {
 					continue;
 				}
 				// диффузность/diffuse reflection
