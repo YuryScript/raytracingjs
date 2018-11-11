@@ -210,7 +210,8 @@ class LightDirectional {
 
 class Renderer {
 	constructor(canvas, scene = {}){
-		this.camera = new Camera(new Position(0, 4, -6), document.documentElement.clientWidth / document.documentElement.clientHeight, 1);
+		//this.camera = new Camera(new Position(0, 4, -6), document.documentElement.clientWidth / document.documentElement.clientHeight, 1);
+		this.camera = new Camera(new Position(0, 4, -6), 1, 1);
 		
 		this.canvas = canvas;
 		this.canvasContext = this.canvas.getContext('2d');
@@ -235,6 +236,7 @@ class Renderer {
 		//floor
 		this.scene.polygon.a = new Polygon([new Position(-10000, -1, 10000), new Position(10000, -1, 10000), new Position(10000, -1, -10000)], new Color(255, 255, 255), 0, 0.5);
 		this.scene.polygon.b = new Polygon([new Position(-10000, -1, 10000), new Position(-10000, -1, -10000), new Position(10000, -1, -10000)], new Color(255, 255, 255), 0, 0.5);
+		/*
 		//back
 		this.scene.polygon.c = new Polygon([new Position(-1, 0, 3), new Position(0, 0, 3), new Position(0, -1, 3)], new Color(204, 16, 204), 0, 0);
 		this.scene.polygon.d = new Polygon([new Position(-1, 0, 3), new Position(-1, -1, 3), new Position(0, -1, 3)], new Color(204, 16, 204), 0, 0);
@@ -253,7 +255,7 @@ class Renderer {
 		//bottom
 		this.scene.polygon.n = new Polygon([new Position(-1, -1, 3), new Position(0, -1, 3), new Position(0, -1, 2)], new Color(204, 16, 204), 0, 0);
 		this.scene.polygon.m = new Polygon([new Position(-1, -1, 3), new Position(-1, -1, 2), new Position(0, -1, 2)], new Color(204, 16, 204), 0, 0);
-		
+		*/
 		this.scene.light = {};
 		this.scene.light.a = new LightAmbient(new Vector(0.1, 0.1, 0.1));
 		this.scene.light.b = new LightDirectional(new Vector(1, 1, 1), new Vector(1, 3, 1));
@@ -505,9 +507,9 @@ class Renderer {
 
 window.onload = () => {
 	const canvas = document.getElementById('canvas');
-	//canvas.width = 10;
-	//canvas.height = 10;
-	canvas.width = document.documentElement.clientWidth;
-	canvas.height = document.documentElement.clientHeight;
+	canvas.width = 600;
+	canvas.height = 600;
+	//canvas.width = document.documentElement.clientWidth;
+	//canvas.height = document.documentElement.clientHeight;
 	const raytracing = new Renderer(canvas);
 }
