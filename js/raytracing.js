@@ -479,8 +479,7 @@ class Renderer {
 						let X = x + (1 / this.supersampling) * i;
 						for(let j = 0; j < this.supersampling; j++){
 							let Y = y + (1 / this.supersampling) * j;
-							let direction = this.canvasToViewport(X, Y);
-							direction = this.multiplyMV(this.camera.rotation, direction);
+							let direction = this.multiplyMV(this.camera.rotation, this.canvasToViewport(X, Y));
 							if(i == 0 && j == 0) {
 								color = this.traceRay(this.camera.position.toVector(), direction, this.camera.distanse, Infinity, this.recursionDepth);
 							}
@@ -492,8 +491,7 @@ class Renderer {
 					}
 				}
 				else {
-					let direction = this.canvasToViewport(x, y);
-					direction = this.multiplyMV(this.camera.rotation, direction);
+					let direction = this.multiplyMV(this.camera.rotation, this.canvasToViewport(x, y));
 					color = this.traceRay(this.camera.position.toVector(), direction, this.camera.distanse, Infinity, this.recursionDepth);
 				}
 				this.canvasContext.putPixel(x, y, color);
