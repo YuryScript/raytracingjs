@@ -1,2 +1,2 @@
 # raytracingjs
-![](<cover.png>)
+![](<./img/cover.png>)
